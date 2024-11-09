@@ -20,6 +20,8 @@ pub struct KeyboardTomlConfig {
     pub dependency: Option<DependencyConfig>,
     /// Split config
     pub split: Option<SplitConfig>,
+    /// GPIO Extender config
+    pub gpio: Option<GPIOConfig>,
 }
 
 /// Configurations for keyboard info
@@ -163,4 +165,15 @@ pub struct SerialConfig {
 
 fn default_true() -> bool {
     true
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub struct GPIOConfig {
+    /// Enable MCP23017 GPIO extender
+    /// To use in input/output pins, use `MI<address>_<bank><pin>`, e.g. `MI20_A0`
+    /// The `address` is the configured I2C address using the A0-A2 pins on the MCP23017.
+    /// Pulling all A0-A2 pins to ground will set the address to 0x20,
+    /// pulling A0 to VCC and A1-A2 to ground will set the address to 0x21, etc.
+    #[serde(default = "default_true")]
+    pub mcp23017_enabled: bool,
 }

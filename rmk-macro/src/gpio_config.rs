@@ -70,7 +70,7 @@ pub(crate) fn convert_direct_pins_to_initializers(
                     } else {
                         // Use None for "_" pins
                         quote! { None }
-                    }
+                    },
                 )
             })
             .map(|(p, ts)| {
@@ -105,25 +105,33 @@ pub(crate) fn convert_gpio_str_to_output_pin(
     } else {
         format_ident!("Low")
     };
-    match chip.series {
-        ChipSeries::Stm32 => {
-            quote! {
-                ::embassy_stm32::gpio::Output::new(p.#gpio_ident, ::embassy_stm32::gpio::Level::#default_level_ident, ::embassy_stm32::gpio::Speed::VeryHigh).degrade()
-            }
+
+    if gpio_name.starts_with("MI") {
+        println!("cargo:warning=Enabled MCP23017");
+        quote! {
+            crate::mcp23017::gpio::Output::new(p.#gpio_ident, crate::mcp23017::gpio::Level::#default_level_ident, crate::mcp23017::gpio::Speed::VeryHigh).degrade()
         }
-        ChipSeries::Nrf52 => {
-            quote! {
-                ::embassy_nrf::gpio::Output::new(::embassy_nrf::gpio::AnyPin::from(p.#gpio_ident), ::embassy_nrf::gpio::Level::#default_level_ident, ::embassy_nrf::gpio::OutputDrive::Standard)
+    } else {
+        match chip.series {
+            ChipSeries::Stm32 => {
+                quote! {
+                    ::embassy_stm32::gpio::Output::new(p.#gpio_ident, ::embassy_stm32::gpio::Level::#default_level_ident, ::embassy_stm32::gpio::Speed::VeryHigh).degrade()
+                }
             }
-        }
-        ChipSeries::Rp2040 => {
-            quote! {
-                ::embassy_rp::gpio::Output::new(::embassy_rp::gpio::AnyPin::from(p.#gpio_ident), ::embassy_rp::gpio::Level::#default_level_ident)
+            ChipSeries::Nrf52 => {
+                quote! {
+                    ::embassy_nrf::gpio::Output::new(::embassy_nrf::gpio::AnyPin::from(p.#gpio_ident), ::embassy_nrf::gpio::Level::#default_level_ident, ::embassy_nrf::gpio::OutputDrive::Standard)
+                }
             }
-        }
-        ChipSeries::Esp32 => {
-            quote! {
-                ::esp_idf_svc::hal::gpio::PinDriver::output(p.pins.#gpio_ident.downgrade_output()).unwrap()
+            ChipSeries::Rp2040 => {
+                quote! {
+                    ::embassy_rp::gpio::Output::new(::embassy_rp::gpio::AnyPin::from(p.#gpio_ident), ::embassy_rp::gpio::Level::#default_level_ident)
+                }
+            }
+            ChipSeries::Esp32 => {
+                quote! {
+                    ::esp_idf_svc::hal::gpio::PinDriver::output(p.pins.#gpio_ident.downgrade_output()).unwrap()
+                }
             }
         }
     }
@@ -141,41 +149,49 @@ pub(crate) fn convert_gpio_str_to_input_pin(
     } else {
         format_ident!("Down")
     };
-    match chip.series {
-        ChipSeries::Stm32 => {
-            if async_matrix {
-                // If async_matrix is enabled, use ExtiInput for input pins
-                match get_pin_num_stm32(&gpio_name) {
-                    Some(pin_num) => {
-                        let pin_num_ident = format_ident!("EXTI{}", pin_num);
-                        quote! {
-                            ::embassy_stm32::exti::ExtiInput::new(::embassy_stm32::gpio::Input::new(p.#gpio_ident, ::embassy_stm32::gpio::Pull::#default_pull_ident).degrade(), p.#pin_num_ident.degrade())
+
+    if gpio_name.starts_with("MI") {
+        println!("cargo:warning=Enabled MCP23017");
+        quote! {
+            // println!("MCP23017 would get initialized")
+        }
+    } else {
+        match chip.series {
+            ChipSeries::Stm32 => {
+                if async_matrix {
+                    // If async_matrix is enabled, use ExtiInput for input pins
+                    match get_pin_num_stm32(&gpio_name) {
+                        Some(pin_num) => {
+                            let pin_num_ident = format_ident!("EXTI{}", pin_num);
+                            quote! {
+                                ::embassy_stm32::exti::ExtiInput::new(::embassy_stm32::gpio::Input::new(p.#gpio_ident, ::embassy_stm32::gpio::Pull::#default_pull_ident).degrade(), p.#pin_num_ident.degrade())
+                            }
+                        }
+                        None => {
+                            let message = format!("Invalid pin definition: {}", gpio_name);
+                            quote! { compile_error!(#message); }
                         }
                     }
-                    None => {
-                        let message = format!("Invalid pin definition: {}", gpio_name);
-                        quote! { compile_error!(#message); }
+                } else {
+                    quote! {
+                        ::embassy_stm32::gpio::Input::new(p.#gpio_ident, ::embassy_stm32::gpio::Pull::#default_pull_ident).degrade()
                     }
                 }
-            } else {
+            }
+            ChipSeries::Nrf52 => {
                 quote! {
-                    ::embassy_stm32::gpio::Input::new(p.#gpio_ident, ::embassy_stm32::gpio::Pull::#default_pull_ident).degrade()
+                    ::embassy_nrf::gpio::Input::new(::embassy_nrf::gpio::AnyPin::from(p.#gpio_ident), ::embassy_nrf::gpio::Pull::#default_pull_ident)
                 }
             }
-        }
-        ChipSeries::Nrf52 => {
-            quote! {
-                ::embassy_nrf::gpio::Input::new(::embassy_nrf::gpio::AnyPin::from(p.#gpio_ident), ::embassy_nrf::gpio::Pull::#default_pull_ident)
+            ChipSeries::Rp2040 => {
+                quote! {
+                    ::embassy_rp::gpio::Input::new(::embassy_rp::gpio::AnyPin::from(p.#gpio_ident), ::embassy_rp::gpio::Pull::#default_pull_ident)
+                }
             }
-        }
-        ChipSeries::Rp2040 => {
-            quote! {
-                ::embassy_rp::gpio::Input::new(::embassy_rp::gpio::AnyPin::from(p.#gpio_ident), ::embassy_rp::gpio::Pull::#default_pull_ident)
-            }
-        }
-        ChipSeries::Esp32 => {
-            quote! {
-                ::esp_idf_svc::hal::gpio::PinDriver::input(p.pins.#gpio_ident.downgrade_input()).unwrap()
+            ChipSeries::Esp32 => {
+                quote! {
+                    ::esp_idf_svc::hal::gpio::PinDriver::input(p.pins.#gpio_ident.downgrade_input()).unwrap()
+                }
             }
         }
     }
