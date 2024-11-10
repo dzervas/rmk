@@ -61,6 +61,8 @@ pub mod ble;
 mod debounce;
 pub mod direct_pin;
 mod flash;
+#[cfg(feature = "mcp23017")]
+pub mod gpio;
 mod hid;
 mod keyboard;
 mod keyboard_macro;

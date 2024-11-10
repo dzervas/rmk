@@ -109,7 +109,7 @@ pub(crate) fn convert_gpio_str_to_output_pin(
     if gpio_name.starts_with("MI") {
         println!("cargo:warning=Enabled MCP23017");
         quote! {
-            crate::mcp23017::gpio::Output::new(p.#gpio_ident, crate::mcp23017::gpio::Level::#default_level_ident, crate::mcp23017::gpio::Speed::VeryHigh).degrade()
+            crate::gpio::mcp23017::Output::new(p.#gpio_ident, crate::mcp23017::gpio::Level::#default_level_ident, crate::mcp23017::gpio::Speed::VeryHigh).degrade()
         }
     } else {
         match chip.series {
@@ -152,8 +152,14 @@ pub(crate) fn convert_gpio_str_to_input_pin(
 
     if gpio_name.starts_with("MI") {
         println!("cargo:warning=Enabled MCP23017");
+        // let default_pull_ident = if low_active {
+        //     format_ident!("Enabled")
+        // } else {
+        //     format_ident!("Disabled")
+        // };
+
         quote! {
-            // println!("MCP23017 would get initialized")
+            crate::gpio::mcp230xx::Input::new(p.#gpio_ident)
         }
     } else {
         match chip.series {
