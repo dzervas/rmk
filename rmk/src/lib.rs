@@ -181,9 +181,9 @@ pub async fn run_rmk_with_async_flash<
 
     // Keyboard matrix, use COL2ROW by default
     #[cfg(feature = "col2row")]
-    let matrix = Matrix::<'_, _, _, _, ROW, COL>::new(input_pins, output_pins, debouncer);
+    let matrix = Matrix::<'_, _, ROW, COL>::new(input_pins, output_pins, debouncer);
     #[cfg(not(feature = "col2row"))]
-    let matrix = Matrix::<'_, _, _, _, COL, ROW>::new(input_pins, output_pins, debouncer);
+    let matrix = Matrix::<'_, _, COL, ROW>::new(input_pins, output_pins, debouncer);
 
     // Dispatch according to chip and communication type
     #[cfg(feature = "_nrf_ble")]
