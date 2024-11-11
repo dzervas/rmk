@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rmk_config::toml_config::{
-    BleConfig, DependencyConfig, KeyboardInfo, KeyboardTomlConfig, LayoutConfig, LightConfig,
-    MatrixConfig, MatrixType, SplitConfig, StorageConfig,
+    BleConfig, DependencyConfig, GPIOConfig, KeyboardInfo, KeyboardTomlConfig, LayoutConfig,
+    LightConfig, MatrixConfig, MatrixType, SplitConfig, StorageConfig,
 };
 use serde::Deserialize;
 use std::fs;
@@ -77,6 +77,8 @@ pub(crate) struct KeyboardConfig {
     pub(crate) storage: StorageConfig,
     // Dependency config
     pub(crate) dependency: DependencyConfig,
+    // GPIO config
+    pub(crate) gpio: GPIOConfig,
 }
 
 #[derive(Clone, Debug)]
@@ -172,6 +174,9 @@ impl KeyboardConfig {
 
         // Dependency config
         config.dependency = toml_config.dependency.unwrap_or_default();
+
+        // GPIO config
+        config.gpio = toml_config.gpio.unwrap_or_default();
 
         Ok(config)
     }

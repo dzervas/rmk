@@ -107,9 +107,10 @@ pub(crate) fn convert_gpio_str_to_output_pin(
     };
 
     if gpio_name.starts_with("MI") {
-        println!("cargo:warning=Enabled MCP23017");
+        let pin_intent = convert_gpio_str_to_mcp230xx_pin(&gpio_name);
+
         quote! {
-            crate::gpio::mcp23017::Output::new(p.#gpio_ident, crate::mcp23017::gpio::Level::#default_level_ident, crate::mcp23017::gpio::Speed::VeryHigh).degrade()
+            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).degrade()
         }
     } else {
         match chip.series {
@@ -151,15 +152,11 @@ pub(crate) fn convert_gpio_str_to_input_pin(
     };
 
     if gpio_name.starts_with("MI") {
-        println!("cargo:warning=Enabled MCP23017");
-        // let default_pull_ident = if low_active {
-        //     format_ident!("Enabled")
-        // } else {
-        //     format_ident!("Disabled")
-        // };
+        println!("Using MCP23017 for input pin: {}", gpio_name);
+        let pin_intent = convert_gpio_str_to_mcp230xx_pin(&gpio_name);
 
         quote! {
-            crate::gpio::mcp230xx::Input::new(p.#gpio_ident)
+            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).degrade()
         }
     } else {
         match chip.series {
@@ -211,4 +208,19 @@ fn get_pin_num_stm32(gpio_name: &String) -> Option<String> {
     } else {
         Some(gpio_name[2..].to_string())
     }
+}
+
+/// Generate an mcp230xx pin definition from a pin string.
+/// For example, if the pin string is "MI20_A2", this function will return "Pin::new(0x20, Bank::A, 2)".
+fn convert_gpio_str_to_mcp230xx_pin(gpio_name: &String) -> proc_macro2::TokenStream {
+    let addr = u8::from_str_radix(&gpio_name[2..4], 16).unwrap();
+    let bank = match &gpio_name[5..6] {
+        "A" => quote! { rmk::gpio::mcp230xx::Bank::A },
+        "B" => quote! { rmk::gpio::mcp230xx::Bank::B },
+        _ => panic!("Invalid bank definition: {}", gpio_name),
+    };
+    let pin = gpio_name[6..]
+        .parse::<u8>()
+        .expect(format!("Invalid pin definition: {}", gpio_name).as_str());
+    quote! { rmk::gpio::mcp230xx::Pin::new(#addr, #bank, #pin) }
 }

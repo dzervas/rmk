@@ -174,6 +174,11 @@ pub struct GPIOConfig {
     /// The `address` is the configured I2C address using the A0-A2 pins on the MCP23017.
     /// Pulling all A0-A2 pins to ground will set the address to 0x20,
     /// pulling A0 to VCC and A1-A2 to ground will set the address to 0x21, etc.
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub mcp23017_enabled: bool,
+    #[serde(default)]
+    pub i2c_enabled: bool,
+    pub i2c_scl: Option<String>,
+    pub i2c_sda: Option<String>,
+    pub i2c_freq_khz: Option<u16>,
 }

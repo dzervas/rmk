@@ -82,10 +82,20 @@ pub(crate) fn bind_interrupt_default(keyboard_config: &KeyboardConfig) -> TokenS
                 } else {
                     quote! { #saadc_interrupt }
                 };
+
+                let twim_interrupt = if keyboard_config.gpio.i2c_enabled {
+                    quote! {
+                        #interrupt_binding
+                        SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0 => ::embassy_nrf::twim::InterruptHandler<::embassy_nrf::peripherals::TWISPI0>;
+                        // SPIM1_SPIS1_TWIM1_TWIS1_SPI1_TWI1 => ::embassy_nrf::twim::InterruptHandler<::embassy_nrf::peripherals::TWISPI1>;
+                    }
+                } else {
+                    quote! {#interrupt_binding}
+                };
                 quote! {
                     use ::embassy_nrf::bind_interrupts;
                     bind_interrupts!(struct Irqs {
-                        #interrupt_binding
+                        #twim_interrupt
                     });
                 }
             }

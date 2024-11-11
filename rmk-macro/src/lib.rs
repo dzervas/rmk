@@ -7,6 +7,7 @@ mod entry;
 mod feature;
 mod flash;
 mod gpio_config;
+mod i2c;
 mod import;
 mod keyboard;
 mod keyboard_config;

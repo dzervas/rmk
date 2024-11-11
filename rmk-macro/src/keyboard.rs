@@ -11,6 +11,7 @@ use crate::{
     entry::expand_rmk_entry,
     feature::{get_rmk_features, is_feature_enabled},
     flash::expand_flash_init,
+    i2c::expand_i2c_config,
     import::expand_imports,
     keyboard_config::{
         expand_keyboard_info, expand_vial_config, read_keyboard_toml_config, KeyboardConfig,
@@ -118,6 +119,7 @@ fn expand_main(
     let matrix_config = expand_matrix_config(keyboard_config, async_matrix);
     let run_rmk = expand_rmk_entry(keyboard_config, &item_mod);
     let (ble_config, set_ble_config) = expand_ble_config(keyboard_config);
+    let i2c_config = expand_i2c_config(keyboard_config);
 
     let main_function_sig = if keyboard_config.chip.series == ChipSeries::Esp32 {
         quote! {
@@ -155,6 +157,8 @@ fn expand_main(
             #matrix_config
 
             #ble_config
+
+            #i2c_config
 
             // Set all keyboard config
             let keyboard_config = ::rmk::config::RmkConfig {
