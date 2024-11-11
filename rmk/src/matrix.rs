@@ -73,17 +73,18 @@ impl KeyState {
 
 /// Matrix is the physical pcb layout of the keyboard matrix.
 pub(crate) struct Matrix<
-    #[cfg(feature = "async_matrix")] In: Wait + InputPin,
-    #[cfg(not(feature = "async_matrix"))] In: InputPin,
-    Out: OutputPin,
+    'a,
+    #[cfg(feature = "async_matrix")] In: Wait + InputPin + 'static,
+    #[cfg(not(feature = "async_matrix"))] In: InputPin + 'static,
+    Out: OutputPin + 'static,
     D: DebouncerTrait,
     const INPUT_PIN_NUM: usize,
     const OUTPUT_PIN_NUM: usize,
 > {
     /// Input pins of the pcb matrix
-    input_pins: [In; INPUT_PIN_NUM],
+    input_pins: &'a mut [&'a mut In; INPUT_PIN_NUM],
     /// Output pins of the pcb matrix
-    output_pins: [Out; OUTPUT_PIN_NUM],
+    output_pins: &'a mut [&'a mut Out; OUTPUT_PIN_NUM],
     /// Debouncer
     debouncer: D,
     /// Key state matrix
@@ -93,18 +94,19 @@ pub(crate) struct Matrix<
 }
 
 impl<
+        'a,
         #[cfg(not(feature = "async_matrix"))] In: InputPin,
         #[cfg(feature = "async_matrix")] In: Wait + InputPin,
         Out: OutputPin,
         D: DebouncerTrait,
         const INPUT_PIN_NUM: usize,
         const OUTPUT_PIN_NUM: usize,
-    > Matrix<In, Out, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
+    > Matrix<'a, In, Out, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
 {
     /// Create a matrix from input and output pins.
     pub(crate) fn new(
-        input_pins: [In; INPUT_PIN_NUM],
-        output_pins: [Out; OUTPUT_PIN_NUM],
+        input_pins: &'a mut [&'a mut In; INPUT_PIN_NUM],
+        output_pins: &'a mut [&'a mut Out; OUTPUT_PIN_NUM],
         debouncer: D,
     ) -> Self {
         Matrix {
@@ -118,13 +120,14 @@ impl<
 }
 
 impl<
+        'a,
         #[cfg(not(feature = "async_matrix"))] In: InputPin,
         #[cfg(feature = "async_matrix")] In: Wait + InputPin,
         Out: OutputPin,
         D: DebouncerTrait,
         const INPUT_PIN_NUM: usize,
         const OUTPUT_PIN_NUM: usize,
-    > MatrixTrait for Matrix<In, Out, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
+    > MatrixTrait for Matrix<'a, In, Out, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
 {
     #[cfg(feature = "col2row")]
     const ROW: usize = INPUT_PIN_NUM;

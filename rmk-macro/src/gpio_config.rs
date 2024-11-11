@@ -17,7 +17,10 @@ pub(crate) fn convert_output_pins_to_initializers(
         });
 
     initializers.extend(pin_initializers);
-    initializers.extend(quote! {let output_pins = [#(#idents), *];});
+    let idents_len = idents.len();
+    initializers.extend(quote! {
+        let output_pins: &mut [&mut dyn ::embedded_hal::digital::OutputPin<Error = ::core::convert::Infallible>; #idents_len] = &mut [#(&mut #idents), *];
+    });
     initializers
 }
 
@@ -42,7 +45,10 @@ pub(crate) fn convert_input_pins_to_initializers(
             quote! { let #ident_name = #ts;}
         });
     initializers.extend(pin_initializers);
-    initializers.extend(quote! {let input_pins = [#(#idents), *];});
+    let idents_len = idents.len();
+    initializers.extend(quote! {
+        let input_pins: &mut [&mut dyn ::embedded_hal::digital::InputPin<Error = ::core::convert::Infallible>; #idents_len] = &mut [#(&mut #idents), *];
+    });
     initializers
 }
 
@@ -111,7 +117,7 @@ pub(crate) fn convert_gpio_str_to_output_pin(
 
         // TODO: Take care of low_active
         quote! {
-            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
+            ::rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
         }
     } else {
         match chip.series {
@@ -158,7 +164,7 @@ pub(crate) fn convert_gpio_str_to_input_pin(
 
         // TODO: Take care of low_active
         quote! {
-            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
+            ::rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
         }
     } else {
         match chip.series {
