@@ -38,16 +38,17 @@ pub(crate) fn build_i2c_config(
 
             // TODO: Check low power implementation: https://github.com/embassy-rs/embassy/blob/main/examples/nrf52840/src/bin/twim_lowpower.rs
             quote! {
-                let mut i2c = ::embassy_nrf::twim::Twim::new(
-                    p.TWISPI0,
-                    Irqs,
-                    p.#sda_pin,
-                    p.#scl_pin,
-                    ::embassy_nrf::twim::Config {
-                        frequency: #freq,
-                        ..Default::default()
-                    }
-                );
+                let mut i2c = {
+                    let mut config = ::embassy_nrf::twim::Config::default();
+                    config.frequency = #freq;
+
+                    ::embassy_nrf::twim::Twim::new(
+                        p.TWISPI0,
+                        Irqs,
+                        p.#sda_pin,
+                        p.#scl_pin,
+                        config)
+                };
             }
         }
         crate::ChipSeries::Rp2040 => {
@@ -57,14 +58,16 @@ pub(crate) fn build_i2c_config(
                 100
             };
             quote! {
-                let mut i2c = ::embassy_rp::i2c::I2c::new_blocking(
-                    p.I2C0,
-                    p.#sda_pin,
-                    p.#scl_pin,
-                    ::embassy_rp::i2c::Config {
-                        frequency = #freq * 1000;
-                        ..Default::default()
-                    });
+                let mut i2c = {
+                    let mut config = ::embassy_rp::i2c::Config::default();
+                    config.frequency = #freq * 1000;
+
+                    ::embassy_rp::i2c::I2c::new_blocking(
+                        p.I2C0,
+                        p.#sda_pin,
+                        p.#scl_pin,
+                        config)
+                }
             }
         }
         crate::ChipSeries::Stm32 => {
@@ -80,7 +83,7 @@ pub(crate) fn build_i2c_config(
                     p.#scl_pin,
                     ::embassy_stm32::time::Hertz(#freq * 1000),
                     ::embassy_stm32::i2c::Config::default()
-                );
+                )
             }
         }
         _ => quote! {None},

@@ -109,8 +109,9 @@ pub(crate) fn convert_gpio_str_to_output_pin(
     if gpio_name.starts_with("MI") {
         let pin_intent = convert_gpio_str_to_mcp230xx_pin(&gpio_name);
 
+        // TODO: Take care of low_active
         quote! {
-            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).degrade()
+            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
         }
     } else {
         match chip.series {
@@ -155,8 +156,9 @@ pub(crate) fn convert_gpio_str_to_input_pin(
         println!("Using MCP23017 for input pin: {}", gpio_name);
         let pin_intent = convert_gpio_str_to_mcp230xx_pin(&gpio_name);
 
+        // TODO: Take care of low_active
         quote! {
-            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).degrade()
+            rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
         }
     } else {
         match chip.series {

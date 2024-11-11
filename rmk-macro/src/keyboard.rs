@@ -144,6 +144,8 @@ fn expand_main(
             // Initialize peripherals as `p`
             #chip_init
 
+            #i2c_config
+
             // Initialize usb driver as `driver`
             #usb_init
 
@@ -157,8 +159,6 @@ fn expand_main(
             #matrix_config
 
             #ble_config
-
-            #i2c_config
 
             // Set all keyboard config
             let keyboard_config = ::rmk::config::RmkConfig {
