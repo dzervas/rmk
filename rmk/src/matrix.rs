@@ -1,5 +1,3 @@
-use core::convert::Infallible;
-
 use crate::{
     debounce::{DebounceState, DebouncerTrait},
     keyboard::{key_event_channel, KeyEvent},
@@ -12,11 +10,6 @@ use {
     defmt::info, embassy_futures::select::select_slice, embedded_hal_async::digital::Wait,
     heapless::Vec,
 };
-
-#[cfg(not(feature = "async_matrix"))]
-pub trait InputPinType: InputPin<Error = Infallible> {}
-#[cfg(feature = "async_matrix")]
-pub trait InputPinType: InputPin<Error = Infallible> + Wait {}
 
 /// MatrixTrait is the trait for keyboard matrix.
 ///
@@ -80,15 +73,17 @@ impl KeyState {
 
 /// Matrix is the physical pcb layout of the keyboard matrix.
 pub(crate) struct Matrix<
-    'a,
+    #[cfg(feature = "async_matrix")] In: Wait + InputPin,
+    #[cfg(not(feature = "async_matrix"))] In: InputPin,
+    Out: OutputPin,
     D: DebouncerTrait,
     const INPUT_PIN_NUM: usize,
     const OUTPUT_PIN_NUM: usize,
 > {
     /// Input pins of the pcb matrix
-    input_pins: &'a mut [&'a mut dyn InputPin<Error = Infallible>; INPUT_PIN_NUM],
+    input_pins: [In; INPUT_PIN_NUM],
     /// Output pins of the pcb matrix
-    output_pins: &'a mut [&'a mut dyn OutputPin<Error = Infallible>; OUTPUT_PIN_NUM],
+    output_pins: [Out; OUTPUT_PIN_NUM],
     /// Debouncer
     debouncer: D,
     /// Key state matrix
@@ -97,13 +92,19 @@ pub(crate) struct Matrix<
     scan_start: Option<Instant>,
 }
 
-impl<'a, D: DebouncerTrait, const INPUT_PIN_NUM: usize, const OUTPUT_PIN_NUM: usize>
-    Matrix<'a, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
+impl<
+        #[cfg(not(feature = "async_matrix"))] In: InputPin,
+        #[cfg(feature = "async_matrix")] In: Wait + InputPin,
+        Out: OutputPin,
+        D: DebouncerTrait,
+        const INPUT_PIN_NUM: usize,
+        const OUTPUT_PIN_NUM: usize,
+    > Matrix<In, Out, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
 {
     /// Create a matrix from input and output pins.
     pub(crate) fn new(
-        input_pins: &'a mut [&'a mut dyn InputPin<Error = Infallible>; INPUT_PIN_NUM],
-        output_pins: &'a mut [&'a mut dyn OutputPin<Error = Infallible>; OUTPUT_PIN_NUM],
+        input_pins: [In; INPUT_PIN_NUM],
+        output_pins: [Out; OUTPUT_PIN_NUM],
         debouncer: D,
     ) -> Self {
         Matrix {
@@ -116,8 +117,14 @@ impl<'a, D: DebouncerTrait, const INPUT_PIN_NUM: usize, const OUTPUT_PIN_NUM: us
     }
 }
 
-impl<'a, D: DebouncerTrait, const INPUT_PIN_NUM: usize, const OUTPUT_PIN_NUM: usize> MatrixTrait
-    for Matrix<'a, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
+impl<
+        #[cfg(not(feature = "async_matrix"))] In: InputPin,
+        #[cfg(feature = "async_matrix")] In: Wait + InputPin,
+        Out: OutputPin,
+        D: DebouncerTrait,
+        const INPUT_PIN_NUM: usize,
+        const OUTPUT_PIN_NUM: usize,
+    > MatrixTrait for Matrix<In, Out, D, INPUT_PIN_NUM, OUTPUT_PIN_NUM>
 {
     #[cfg(feature = "col2row")]
     const ROW: usize = INPUT_PIN_NUM;

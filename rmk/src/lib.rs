@@ -24,7 +24,7 @@ use crate::{
     via::vial_task,
 };
 use action::KeyAction;
-use core::{cell::RefCell, convert::Infallible, sync::atomic::AtomicBool};
+use core::{cell::RefCell, sync::atomic::AtomicBool};
 use debounce::DebouncerTrait;
 use defmt::{error, warn};
 #[cfg(not(feature = "_esp_ble"))]
@@ -90,27 +90,23 @@ pub(crate) static KEYBOARD_STATE: AtomicBool = AtomicBool::new(false);
 /// * `keyboard_config` - other configurations of the keyboard, check [RmkConfig] struct for details
 /// * `spawner`: (optional) embassy spawner used to spawn async tasks. This argument is enabled for non-esp microcontrollers
 pub async fn run_rmk<
-    'a,
-    // #[cfg(feature = "async_matrix")] In: Wait + InputPin + 'static,
-    // #[cfg(not(feature = "async_matrix"))] In: InputPin + 'static,
-    // Out: OutputPin + 'static,
+    #[cfg(feature = "async_matrix")] In: Wait + InputPin,
+    #[cfg(not(feature = "async_matrix"))] In: InputPin,
+    Out: OutputPin,
     #[cfg(not(feature = "_no_usb"))] D: Driver<'static>,
     #[cfg(not(feature = "_no_external_storage"))] F: NorFlash,
     const ROW: usize,
     const COL: usize,
     const NUM_LAYER: usize,
 >(
-    #[cfg(feature = "col2row")] input_pins: &'a mut [&'a mut dyn InputPin<Error = Infallible>; ROW],
-    #[cfg(not(feature = "col2row"))] input_pins: &'a mut [&'a mut dyn InputPin<Error = Infallible>;
-                COL],
-    #[cfg(feature = "col2row")] output_pins: &'a mut [&'a mut dyn OutputPin<Error = Infallible>;
-                COL],
-    #[cfg(not(feature = "col2row"))] output_pins: &'a mut [&'a mut dyn OutputPin<Error = Infallible>;
-                ROW],
+    #[cfg(feature = "col2row")] input_pins: [In; ROW],
+    #[cfg(not(feature = "col2row"))] input_pins: [In; COL],
+    #[cfg(feature = "col2row")] output_pins: [Out; COL],
+    #[cfg(not(feature = "col2row"))] output_pins: [Out; ROW],
     #[cfg(not(feature = "_no_usb"))] usb_driver: D,
     #[cfg(not(feature = "_no_external_storage"))] flash: F,
     default_keymap: &mut [[[KeyAction; COL]; ROW]; NUM_LAYER],
-    keyboard_config: RmkConfig<'static, &'a mut dyn OutputPin<Error = Infallible>>,
+    keyboard_config: RmkConfig<'static, Out>,
     #[cfg(not(feature = "_esp_ble"))] spawner: Spawner,
 ) -> ! {
     // Wrap `embedded-storage` to `embedded-storage-async`
@@ -146,27 +142,23 @@ pub async fn run_rmk<
 #[allow(unused_variables)]
 #[allow(unreachable_code)]
 pub async fn run_rmk_with_async_flash<
-    'a,
-    // #[cfg(feature = "async_matrix")] In: Wait + InputPin + 'static,
-    // #[cfg(not(feature = "async_matrix"))] In: InputPin + 'static,
-    // Out: OutputPin + 'static,
+    #[cfg(feature = "async_matrix")] In: Wait + InputPin,
+    #[cfg(not(feature = "async_matrix"))] In: InputPin,
+    Out: OutputPin,
     #[cfg(not(feature = "_no_usb"))] D: Driver<'static>,
     #[cfg(not(feature = "_no_external_storage"))] F: AsyncNorFlash,
     const ROW: usize,
     const COL: usize,
     const NUM_LAYER: usize,
 >(
-    #[cfg(feature = "col2row")] input_pins: &'a mut [&'a mut dyn InputPin<Error = Infallible>; ROW],
-    #[cfg(not(feature = "col2row"))] input_pins: &'a mut [&'a mut dyn InputPin<Error = Infallible>;
-                COL],
-    #[cfg(feature = "col2row")] output_pins: &'a mut [&'a mut dyn OutputPin<Error = Infallible>;
-                COL],
-    #[cfg(not(feature = "col2row"))] output_pins: &'a mut [&'a mut dyn OutputPin<Error = Infallible>;
-                ROW],
+    #[cfg(feature = "col2row")] input_pins: [In; ROW],
+    #[cfg(not(feature = "col2row"))] input_pins: [In; COL],
+    #[cfg(feature = "col2row")] output_pins: [Out; COL],
+    #[cfg(not(feature = "col2row"))] output_pins: [Out; ROW],
     #[cfg(not(feature = "_no_usb"))] usb_driver: D,
     #[cfg(not(feature = "_no_external_storage"))] flash: F,
     default_keymap: &mut [[[KeyAction; COL]; ROW]; NUM_LAYER],
-    keyboard_config: RmkConfig<'static, &'a mut dyn OutputPin<Error = Infallible>>,
+    keyboard_config: RmkConfig<'static, Out>,
     #[cfg(not(feature = "_esp_ble"))] spawner: Spawner,
 ) -> ! {
     // Create the debouncer, use COL2ROW by default
@@ -181,9 +173,9 @@ pub async fn run_rmk_with_async_flash<
 
     // Keyboard matrix, use COL2ROW by default
     #[cfg(feature = "col2row")]
-    let matrix = Matrix::<'_, _, ROW, COL>::new(input_pins, output_pins, debouncer);
+    let matrix = Matrix::<_, _, _, ROW, COL>::new(input_pins, output_pins, debouncer);
     #[cfg(not(feature = "col2row"))]
-    let matrix = Matrix::<'_, _, COL, ROW>::new(input_pins, output_pins, debouncer);
+    let matrix = Matrix::<_, _, _, COL, ROW>::new(input_pins, output_pins, debouncer);
 
     // Dispatch according to chip and communication type
     #[cfg(feature = "_nrf_ble")]
