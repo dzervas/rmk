@@ -104,68 +104,6 @@ pub(crate) fn gen_imports(config: &KeyboardConfig) -> TokenStream2 {
     }
 }
 
-pub(crate) fn gen_pin_enums(config: &KeyboardConfig, async_matrix: bool) -> TokenStream2 {
-    let (input, output) = match config.chip.series {
-        ChipSeries::Stm32 => {
-            let input = if async_matrix {
-                quote! { ::embassy_stm32::exti::ExtiInput }
-            } else {
-                quote! { ::embassy_stm32::gpio::Input }
-            };
-            let output = quote! { ::embassy_stm32::gpio::Output };
-            (input, output)
-        }
-        ChipSeries::Nrf52 => {
-            let input = quote! { ::embassy_nrf::gpio::Input };
-            let output = quote! { ::embassy_nrf::gpio::Output };
-            (input, output)
-        }
-        ChipSeries::Rp2040 => {
-            let input = quote! { ::embassy_rp::gpio::Input };
-            let output = quote! { ::embassy_rp::gpio::Output };
-            (input, output)
-        }
-        ChipSeries::Esp32 => {
-            let input = quote! { ::esp_idf_svc::hal::gpio::PinDriver };
-            let output = quote! { ::esp_idf_svc::hal::gpio::PinDriver };
-            (input, output)
-        }
-    };
-
-    let i2c_type = match config.chip.series {
-        ChipSeries::Stm32 => quote! { ::embassy_stm32::i2c::I2c },
-        ChipSeries::Nrf52 => {
-            quote! { ::embassy_nrf::twim::Twim<'a, ::embassy_nrf::peripherals::TWISPI0> }
-        }
-        ChipSeries::Rp2040 => quote! { ::embassy_rp::i2c::I2c },
-        ChipSeries::Esp32 => quote! { ::esp_idf_svc::hal::i2c::I2c },
-    };
-
-    let extend_input = if config.gpio.mcp23017_enabled {
-        quote! { MCP230xx(::rmk::gpio::mcp230xx::Input<#i2c_type>), }
-    } else {
-        quote! {}
-    };
-
-    let extend_output = if config.gpio.mcp23017_enabled {
-        quote! { MCP230xx(::rmk::gpio::mcp230xx::Output<#i2c_type>), }
-    } else {
-        quote! {}
-    };
-
-    quote! {
-        pub enum InPin<'a> {
-            Hardware(#input),
-            #extend_input
-        }
-
-        pub enum OutPin<'a> {
-            Hardware(#output),
-            #extend_output
-        }
-    }
-}
-
 fn expand_main(
     keyboard_config: &KeyboardConfig,
     item_mod: ItemMod,
@@ -173,7 +111,6 @@ fn expand_main(
 ) -> TokenStream2 {
     // Expand components of main function
     let imports = expand_imports(&item_mod);
-    let pin_enums = gen_pin_enums(keyboard_config, async_matrix);
     let bind_interrupt = expand_bind_interrupt(keyboard_config, &item_mod);
     let chip_init = expand_chip_init(keyboard_config, &item_mod);
     let usb_init = expand_usb_init(keyboard_config, &item_mod);
