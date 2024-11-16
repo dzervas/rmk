@@ -90,6 +90,21 @@ pub(crate) fn build_i2c_config(
     }
 }
 
+pub(crate) fn i2c_gpio_expander(gpio_config: &GPIOConfig) -> proc_macro2::TokenStream {
+    if gpio_config.mcp23017_enabled {
+        quote! {
+            let mut mcp23x17 = port_expander::Mcp23x17::new_mcp23017(i2c, false, false, false);
+            let ge = mcp23x17.split();
+        }
+    } else {
+        quote! {}
+    }
+}
+
 pub(crate) fn expand_i2c_config(keyboard_config: &KeyboardConfig) -> proc_macro2::TokenStream {
-    build_i2c_config(&keyboard_config.chip, &keyboard_config.gpio)
+    let mut i2c_init = build_i2c_config(&keyboard_config.chip, &keyboard_config.gpio);
+    let i2c_gpio_expander = i2c_gpio_expander(&keyboard_config.gpio);
+    i2c_init.extend(i2c_gpio_expander);
+
+    i2c_init
 }

@@ -17,9 +17,10 @@ pub(crate) fn convert_output_pins_to_initializers(
         });
 
     initializers.extend(pin_initializers);
-    let idents_len = idents.len();
+    // let idents_len = idents.len();
     initializers.extend(quote! {
-        let output_pins: &mut [&mut dyn ::embedded_hal::digital::OutputPin<Error = ::core::convert::Infallible>; #idents_len] = &mut [#(&mut #idents), *];
+        // let output_pins: ::heapless::Vec<::embedded_hal::digital::OutputPin<Error = ::core::convert::Infallible> + Sized, #idents_len> = ::heapless::Vec::from_slice(&[#(#idents), *]).unwrap();
+        let output_pins = [#(#idents), *];
     });
     initializers
 }
@@ -45,9 +46,10 @@ pub(crate) fn convert_input_pins_to_initializers(
             quote! { let #ident_name = #ts;}
         });
     initializers.extend(pin_initializers);
-    let idents_len = idents.len();
+    // let idents_len = idents.len();
     initializers.extend(quote! {
-        let input_pins: &mut [&mut dyn ::embedded_hal::digital::InputPin<Error = ::core::convert::Infallible>; #idents_len] = &mut [#(&mut #idents), *];
+        // let input_pins: ::heapless::Vec<::embedded_hal::digital::InputPin<Error = ::core::convert::Infallible> + Sized, #idents_len> = ::heapless::Vec::from_slice([#(#idents), *]).unwrap();
+        let input_pins = [#(#idents), *];
     });
     initializers
 }
@@ -113,11 +115,11 @@ pub(crate) fn convert_gpio_str_to_output_pin(
     };
 
     if gpio_name.starts_with("MI") {
-        let pin_intent = convert_gpio_str_to_mcp230xx_pin(&gpio_name);
+        let pin_intent = format_ident!("gp{}", gpio_name.split_once("_").unwrap().1.to_lowercase());
 
         // TODO: Take care of low_active
         quote! {
-            ::rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
+            ge.#pin_intent.into_output().unwrap()
         }
     } else {
         match chip.series {
@@ -160,11 +162,11 @@ pub(crate) fn convert_gpio_str_to_input_pin(
 
     if gpio_name.starts_with("MI") {
         println!("Using MCP23017 for input pin: {}", gpio_name);
-        let pin_intent = convert_gpio_str_to_mcp230xx_pin(&gpio_name);
+        let pin_intent = format_ident!("gp{}", gpio_name.split_once("_").unwrap().1.to_lowercase());
 
         // TODO: Take care of low_active
         quote! {
-            ::rmk::gpio::mcp230xx::Input::new(i2c, #pin_intent).unwrap()
+            ge.#pin_intent.into_input().unwrap()
         }
     } else {
         match chip.series {
@@ -216,19 +218,4 @@ fn get_pin_num_stm32(gpio_name: &String) -> Option<String> {
     } else {
         Some(gpio_name[2..].to_string())
     }
-}
-
-/// Generate an mcp230xx pin definition from a pin string.
-/// For example, if the pin string is "MI20_A2", this function will return "Pin::new(0x20, Bank::A, 2)".
-fn convert_gpio_str_to_mcp230xx_pin(gpio_name: &String) -> proc_macro2::TokenStream {
-    let addr = u8::from_str_radix(&gpio_name[2..4], 16).unwrap();
-    let bank = match &gpio_name[5..6] {
-        "A" => quote! { rmk::gpio::mcp230xx::Bank::A },
-        "B" => quote! { rmk::gpio::mcp230xx::Bank::B },
-        _ => panic!("Invalid bank definition: {}", gpio_name),
-    };
-    let pin = gpio_name[6..]
-        .parse::<u8>()
-        .expect(format!("Invalid pin definition: {}", gpio_name).as_str());
-    quote! { rmk::gpio::mcp230xx::Pin::new(#addr, #bank, #pin) }
 }

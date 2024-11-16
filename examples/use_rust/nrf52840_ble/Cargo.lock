@@ -1106,6 +1106,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2900ede94e305130c13ddd391e0ab7cbaeb783945ae07a279c268cb05109c6cb"
 
 [[package]]
+name = "port-expander"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1304098353217102c28f2fa9506b4b7bfd05cd5f1e9f1a8eddb2829da5f491d5"
+dependencies = [
+ "embedded-hal 1.0.0",
+]
+
+[[package]]
 name = "portable-atomic"
 version = "1.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1249,6 +1258,7 @@ dependencies = [
  "nrf-softdevice",
  "num_enum",
  "once_cell",
+ "port-expander",
  "postcard",
  "rmk-config",
  "rmk-macro",
