@@ -11,7 +11,7 @@ pub(crate) fn build_i2c_config(
     gpio_config: &GPIOConfig,
 ) -> proc_macro2::TokenStream {
     if !gpio_config.i2c_enabled {
-        return quote! {None};
+        return quote! {};
     }
 
     let sda_pin = format_ident!(
@@ -49,6 +49,7 @@ pub(crate) fn build_i2c_config(
                         p.#scl_pin,
                         config)
                 };
+                ::embassy_nrf::interrupt::SPIM0_SPIS0_TWIM0_TWIS0_SPI0_TWI0.set_priority(::embassy_nrf::interrupt::Priority::P2);
             }
         }
         crate::ChipSeries::Rp2040 => {
@@ -91,6 +92,10 @@ pub(crate) fn build_i2c_config(
 }
 
 pub(crate) fn i2c_gpio_expander(gpio_config: &GPIOConfig) -> proc_macro2::TokenStream {
+    if !gpio_config.i2c_enabled {
+        return quote! {};
+    }
+
     if gpio_config.mcp23017_enabled {
         quote! {
             let mut mcp23x17 = port_expander::Mcp23x17::new_mcp23017(i2c, false, false, false);
