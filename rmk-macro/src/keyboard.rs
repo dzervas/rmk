@@ -146,21 +146,23 @@ fn expand_main(
             // Initialize peripherals as `p`
             #chip_init
 
-            #i2c_config
-
             // Initialize usb driver as `driver`
             #usb_init
 
             // Initialize flash driver as `flash` and storage config as `storage_config`
             #flash_init
 
+            #i2c_config
+
             // Initialize light config as `light_config`
             #light_config
 
             // Initialize matrix config as `(input_pins, output_pins)` or `direct_pins`
             #matrix_config
+            ::defmt::info!("Everything initialized");
 
             #ble_config
+
 
             // Set all keyboard config
             let keyboard_config = ::rmk::config::RmkConfig {
@@ -172,6 +174,7 @@ fn expand_main(
                 ..Default::default()
             };
 
+            ::defmt::info!("Running RMK");
             // Start serving
             #run_rmk
         }

@@ -41,6 +41,7 @@ pub(crate) fn build_i2c_config(
                 let mut i2c = {
                     let mut config = ::embassy_nrf::twim::Config::default();
                     config.frequency = #freq;
+                    ::defmt::info!("I2C initialized");
 
                     ::embassy_nrf::twim::Twim::new(
                         p.TWISPI0,
@@ -100,6 +101,7 @@ pub(crate) fn i2c_gpio_expander(gpio_config: &GPIOConfig) -> proc_macro2::TokenS
         quote! {
             let mut mcp23x17 = port_expander::Mcp23x17::new_mcp23017(i2c, false, false, false);
             let ge = mcp23x17.split();
+            ::defmt::info!("MCP23017 initialized");
         }
     } else {
         quote! {}

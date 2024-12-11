@@ -119,7 +119,7 @@ pub(crate) fn convert_gpio_str_to_output_pin(
 
         // TODO: Take care of low_active
         quote! {
-            ge.#pin_intent.into_output().unwrap()
+            ge.#pin_intent.into_output().expect("Failed to initialize output pin")
         }
     } else {
         match chip.series {
